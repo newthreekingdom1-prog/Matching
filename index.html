@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国景点记忆配对 | Chinese Landmarks Memory Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2.5rem;
+            color: #2c3e50;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        h1:after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 5px;
+            background: linear-gradient(to right, #e74c3c, #3498db);
+            margin: 10px auto;
+            border-radius: 3px;
+        }
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            gap: 10px;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            background: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .control-btn.active {
+            background: #3498db;
+            color: white;
+        }
+        #game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .info-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        #progress-container {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #ecf0f1;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #progress {
+            height: 100%;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 6px;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 25px;
+        }
+        .card {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* 維持正方形 */
+            cursor: pointer;
+            transition: transform 0.5s, box-shadow 0.3s;
+            transform-style: preserve-3d;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            transform: rotateY(180deg);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.7);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .card-front {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            transform: rotateY(180deg);
+            padding: 10px;
+            flex-direction: column;
+        }
+        .card-back {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        .card-back:before {
+            content: "中";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.15);
+            font-size: 70px;
+            font-weight: bold;
+        }
+        .card img {
+            max-width: 90%;
+            max-height: 70%;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+            padding: 0 5px;
+        }
+        .card-description {
+            font-size: 10px;
+            color: #7f8c8d;
+            text-align: center;
+            padding: 0 5px;
+            margin-top: 5px;
+        }
+        #reset-button {
+            margin-top: 10px;
+            padding: 12px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        #reset-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+        }
+        #victory-message {
+            display: none;
+            margin-top: 25px;
+            padding: 25px 30px;
+            font-size: 26px;
+            color: #27ae60;
+            text-align: center;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-width: 500px;
+            width: 100%;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .victory-stats {
+            margin-top: 15px;
+            font-size: 20px;
+            color: #2c3e50;
+        }
+        .victory-stats div {
+            margin: 8px 0;
+        }
+        #name-input-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #player-name {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            width: 200px;
+        }
+        #save-score-button {
+            padding: 10px 20px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        #save-score-button:hover {
+            background: #27ae60;
+        }
+        /* 排行榜样式 */
+        #leaderboard {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+        #leaderboard h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .leaderboard-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .leaderboard-tab {
+            padding: 8px 16px;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+        .leaderboard-tab.active {
+            background: #3498db;
+            color: white;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .leaderboard-table th {
+            background: #3498db;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+        .leaderboard-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .leaderboard-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .leaderboard-table tr:hover {
+            background: #ecf0f1;
+        }
+        .rank {
+            font-weight: bold;
+            width: 50px;
+            text-align: center;
+        }
+        .player-name {
+            font-weight: bold;
+        }
+        .score-time, .score-flips, .score-accuracy {
+            text-align: center;
+        }
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            #game-board {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+           
+            .card-title {
+                font-size: 14px;
+            }
+           
+            h1 {
+                font-size: 2rem;
+            }
+           
+            .info-value {
+                font-size: 20px;
+            }
+        }
+        @media (max-width: 480px) {
+            #game-board {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+           
+            .card-title {
+                font-size: 12px;
+            }
+           
+            .card-description {
+                display: none;
+            }
+           
+            h1 {
+                font-size: 1.8rem;
+            }
+           
+            #game-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+           
+            .info-item {
+                flex-direction: row;
+                justify-content: space-between;
+                width: 100%;
+            }
+            
+            .header-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+        /* 匹配成功動畫 */
+        @keyframes matchAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .match-animation {
+            animation: matchAnimation 0.5s ease;
+        }
+        /* 載入指示器 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* 載入畫面 */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(52, 152, 219, 0.3);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        .loading-text {
+            font-size: 18px;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">載入中，請稍候...</div>
+    </div>
+
+    <div class="container">
+        <h1 id="game-title">中國景點記憶配對</h1>
+       
+        <div class="header-controls">
+            <div class="control-group">
+                <button class="control-btn active" id="lang-zh">中文</button>
+                <button class="control-btn" id="lang-en">English</button>
+            </div>
+            <div class="control-group">
+                <button class="control-btn active" data-level="8" id="level-easy">初級 (8對)</button>
+                <button class="control-btn" data-level="12" id="level-medium">中級 (12對)</button>
+                <button class="control-btn" data-level="16" id="level-hard">高級 (16對)</button>
+            </div>
+        </div>
+       
+        <div id="progress-container">
+            <div id="progress-bar">
+                <div id="progress"></div>
+            </div>
+        </div>
+       
+        <div id="game-info">
+            <div class="info-item">
+                <div class="info-label" id="time-label">時間</div>
+                <div class="info-value" id="timer">0</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" id="flips-label">翻牌次數</div>
+                <div class="info-value" id="flips">0</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label" id="matches-label">配對</div>
+                <div class="info-value" id="matches">0</div>
+            </div>
+        </div>
+       
+        <div id="game-board"></div>
+       
+        <button id="reset-button">重新開始</button>
+       
+        <div id="victory-message">
+            <div id="victory-text">恭喜！你贏了！</div>
+            <div class="victory-stats">
+                <div id="final-time-text">用時: <span id="final-time">0</span> 秒</div>
+                <div id="final-flips-text">翻牌次數: <span id="final-flips">0</span></div>
+                <div id="accuracy-text">準確率: <span id="accuracy">0</span>%</div>
+            </div>
+            <div id="name-input-container">
+                <input type="text" id="player-name" placeholder="輸入您的姓名">
+                <button id="save-score-button">保存成績</button>
+            </div>
+        </div>
+        
+        <div id="leaderboard">
+            <h2 id="leaderboard-title">排行榜</h2>
+            <div class="leaderboard-tabs">
+                <button class="leaderboard-tab active" data-level="easy" id="lb-easy">初級</button>
+                <button class="leaderboard-tab" data-level="medium" id="lb-medium">中級</button>
+                <button class="leaderboard-tab" data-level="hard" id="lb-hard">高級</button>
+            </div>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th class="rank">排名</th>
+                        <th class="player-name">玩家</th>
+                        <th class="score-time">時間</th>
+                        <th class="score-flips">翻牌次數</th>
+                        <th class="score-accuracy">準確率</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- 排行榜内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // 语言设置
+        const languageTexts = {
+            'zh': {
+                'gameTitle': '中國景點記憶配對',
+                'timeLabel': '時間',
+                'flipsLabel': '翻牌次數',
+                'matchesLabel': '配對',
+                'resetButton': '重新開始',
+                'victoryText': '恭喜！你贏了！',
+                'finalTimeText': '用時:',
+                'finalFlipsText': '翻牌次數:',
+                'accuracyText': '準確率:',
+                'namePlaceholder': '輸入您的姓名',
+                'saveScoreButton': '保存成績',
+                'leaderboardTitle': '排行榜',
+                'loadingText': '載入中，請稍候...',
+                'levelEasy': '初級 (8對)',
+                'levelMedium': '中級 (12對)',
+                'levelHard': '高級 (16對)'
+            },
+            'en': {
+                'gameTitle': 'Chinese Landmarks Memory Game',
+                'timeLabel': 'Time',
+                'flipsLabel': 'Flips',
+                'matchesLabel': 'Matches',
+                'resetButton': 'Restart',
+                'victoryText': 'Congratulations! You won!',
+                'finalTimeText': 'Time:',
+                'finalFlipsText': 'Flips:',
+                'accuracyText': 'Accuracy:',
+                'namePlaceholder': 'Enter your name',
+                'saveScoreButton': 'Save Score',
+                'leaderboardTitle': 'Leaderboard',
+                'loadingText': 'Loading, please wait...',
+                'levelEasy': 'Easy (8 pairs)',
+                'levelMedium': 'Medium (12 pairs)',
+                'levelHard': 'Hard (16 pairs)'
+            }
+        };
+
+        // 中国景点数据 - 使用可靠的图片链接
+        const allLandmarks = [
+            {
+                name: '長城',
+                nameEn: 'Great Wall',
+                image: 'https://i.natgeofe.com/n/20e923d3-042c-4045-942a-52308add6a75/great-wall-unesco-china.jpg',
+                description: '世界文化遺產，中國古代軍事防禦工程',
+                descriptionEn: 'World cultural heritage, ancient Chinese military defense project'
+            },
+            {
+                name: '故宮',
+                nameEn: 'Forbidden City',
+                image: 'https://static.toiimg.com/photo/104402968.cms',
+                description: '明清兩代的皇家宮殿，位於北京中心',
+                descriptionEn: 'Imperial palace of the Ming and Qing dynasties, located in central Beijing'
+            },
+            {
+                name: '兵馬俑',
+                nameEn: 'Terracotta Army',
+                image: 'https://blog.annemckinnell.com/wp-content/uploads/2017/04/20160922-_DSC6157-Edit.jpg',
+                description: '秦始皇陵的陪葬坑，世界第八大奇蹟',
+                descriptionEn: 'Burial pit of the Mausoleum of Qin Shi Huang, the eighth wonder of the world'
+            },
+            {
+                name: '西湖',
+                nameEn: 'West Lake',
+                image: 'https://www.thechinaguide.com/uploads/201710/08/59d9977137615.jpg',
+                description: '杭州著名淡水湖，中國十大風景名勝之一',
+                descriptionEn: 'Famous freshwater lake in Hangzhou, one of the top ten scenic spots in China'
+            },
+            {
+                name: '黃山',
+                nameEn: 'Mount Huang',
+                image: 'https://www.chinaxiantour.com/media/2023/05/Mount-Huangshan.webp',
+                description: '安徽名山，以奇松、怪石、雲海、溫泉聞名',
+                descriptionEn: 'Famous mountain in Anhui, known for strange pines, grotesque rocks, sea of clouds and hot springs'
+            },
+            {
+                name: '九寨溝',
+                nameEn: 'Jiuzhaigou Valley',
+                image: 'https://sevennaturalwonders.org/wp-content/uploads/2024/02/Jiuzhaigou-National-Park-Five-Flower-Lake.jpg',
+                description: '四川自然保護區，以多彩湖泊和瀑布群聞名',
+                descriptionEn: 'Nature reserve in Sichuan, famous for colorful lakes and waterfalls'
+            },
+            {
+                name: '張家界',
+                nameEn: 'Zhangjiajie',
+                image: 'https://cstad.s3-ap-southeast-2.amazonaws.com/naturalchina_zhangjiajiehero.jpg',
+                description: '湖南國家森林公園，以石英砂岩峰林著稱',
+                descriptionEn: 'National forest park in Hunan, known for quartz sandstone peak forest'
+            },
+            {
+                name: '布達拉宮',
+                nameEn: 'Potala Palace',
+                image: 'https://www.ourchinastory.com/images/content/travel-leisure/2021/09/%E7%95%B6%E4%BB%A3%E4%B8%AD%E5%9C%8B-%E6%BD%AE%E9%81%8A%E7%94%9F%E6%B4%BB-%E6%97%85%E9%81%8A%E9%A2%A8%E7%89%A9-%E8%A5%BF%E8%97%8F%E6%8B%89%E8%96%A9%EF%BC%90%EF%BC%91_x1.jpg',
+                description: '西藏拉薩的宮堡式建築群，世界上海拔最高宮殿',
+                descriptionEn: 'Palace complex in Lhasa, Tibet, the highest palace in the world'
+            },
+            {
+                name: '天壇',
+                nameEn: 'Temple of Heaven',
+                image: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Temple_of_Heaven_20160323_01.jpg',
+                description: '明清皇帝祭天之地，北京著名古建築',
+                descriptionEn: 'Where emperors of Ming and Qing dynasties worshipped heaven, famous ancient building in Beijing'
+            },
+            {
+                name: '頤和園',
+                nameEn: 'Summer Palace',
+                image: 'https://cdn.britannica.com/58/252558-050-A8CA20B0/The-Summer-Palace-Beijing-China.jpg',
+                description: '中國皇家園林，位於北京西郊',
+                descriptionEn: 'Imperial garden in China, located in the western suburbs of Beijing'
+            },
+            {
+                name: '莫高窟',
+                nameEn: 'Mogao Caves',
+                image: 'https://smarthistory.org/wp-content/uploads/2022/02/1_Mogao96.jpg',
+                description: '敦煌石窟藝術，世界文化遺產',
+                descriptionEn: 'Dunhuang cave art, world cultural heritage'
+            },
+            {
+                name: '桂林山水',
+                nameEn: 'Guilin Landscape',
+                image: 'https://www.yangtze.com/wp-content/uploads/2013/03/Li-River.jpeg',
+                description: '廣西風景名勝，以喀斯特地貌聞名',
+                descriptionEn: 'Scenic spot in Guangxi, famous for karst landscape'
+            },
+            {
+                name: '麗江古城',
+                nameEn: 'Lijiang Old Town',
+                image: 'https://www.asiaodysseytravel.com/images/china-tours/group-tours/lijiang-old-town-700-18.jpg',
+                description: '雲南古城，世界文化遺產',
+                descriptionEn: 'Ancient town in Yunnan, world cultural heritage'
+            },
+            {
+                name: '泰山',
+                nameEn: 'Mount Tai',
+                image: 'https://www.thechinajourney.com/wp-content/uploads/2025/04/Ancient-temple-pavilion-perched-on-Mount-Tai-with-distant-cityscape-shrouded-in-morning-haze-1024x576.webp',
+                description: '五嶽之首，山東名山',
+                descriptionEn: 'The first of the Five Great Mountains, famous mountain in Shandong'
+            },
+            {
+                name: '峨眉山',
+                nameEn: 'Mount Emei',
+                image: 'https://www.thechinajourney.com/wp-content/uploads/2025/09/Golden-Summit-with-Samantabhadra-Statue-above-the-clouds-at-Mount-Emei.webp',
+                description: '四川佛教名山，世界文化與自然雙遺產',
+                descriptionEn: 'Buddhist mountain in Sichuan, world cultural and natural heritage'
+            },
+            {
+                name: '壺口瀑布',
+                nameEn: 'Hukou Waterfall',
+                image: 'https://media.gettyimages.com/id/2220846448/photo/yanan-china-a-view-of-a-roaring-torrent-carrying-a-large-amount-of-yellow-sediment-at-the.jpg?s=612x612&w=gi&k=20&c=lrYeqBABkp_Y6YnO3BZNR2DltQJcqRVtLQfkMBwvC9s=',
+                description: '黃河上最大瀑布，位於山西陝西交界',
+                descriptionEn: 'Largest waterfall on the Yellow River, located at the border of Shanxi and Shaanxi'
+            }
+        ];
+        
+        // 游戏变量
+        let cards = [];
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let timerInterval = null;
+        let time = 0;
+        let flips = 0;
+        let matches = 0;
+        let currentLevel = 8;
+        let totalPairs = 8;
+        let currentLanguage = 'zh';
+        let imagesLoaded = 0;
+        let totalImages = 0;
+        
+        // DOM 元素
+        const gameBoard = document.getElementById('game-board');
+        const timerElement = document.getElementById('timer');
+        const flipsElement = document.getElementById('flips');
+        const matchesElement = document.getElementById('matches');
+        const resetButton = document.getElementById('reset-button');
+        const victoryMessage = document.getElementById('victory-message');
+        const finalTimeElement = document.getElementById('final-time');
+        const finalFlipsElement = document.getElementById('final-flips');
+        const accuracyElement = document.getElementById('accuracy');
+        const progressElement = document.getElementById('progress');
+        const difficultyButtons = document.querySelectorAll('.control-btn[data-level]');
+        const languageButtons = document.querySelectorAll('.control-btn[id^="lang-"]');
+        const playerNameInput = document.getElementById('player-name');
+        const saveScoreButton = document.getElementById('save-score-button');
+        const leaderboard = document.getElementById('leaderboard');
+        const leaderboardTabs = document.querySelectorAll('.leaderboard-tab');
+        const leaderboardBody = document.getElementById('leaderboard-body');
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingText = document.getElementById('loading-text');
+        
+        // 初始化游戏
+        function initGame() {
+            // 设置难度级别
+            difficultyButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    difficultyButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentLevel = parseInt(this.dataset.level);
+                    totalPairs = currentLevel;
+                    resetGame();
+                });
+            });
+           
+            // 设置语言切换
+            languageButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    languageButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentLanguage = this.id === 'lang-zh' ? 'zh' : 'en';
+                    updateLanguage();
+                    resetGame();
+                });
+            });
+            
+            // 设置重置按钮
+            resetButton.addEventListener('click', resetGame);
+            
+            // 设置保存成绩按钮
+            saveScoreButton.addEventListener('click', saveScore);
+            
+            // 设置排行榜标签
+            leaderboardTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    leaderboardTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    updateLeaderboard(this.dataset.level);
+                });
+            });
+            
+            // 加载排行榜
+            updateLeaderboard('easy');
+            leaderboard.style.display = 'block';
+           
+            // 开始游戏
+            resetGame();
+        }
+        
+        // 更新语言
+        function updateLanguage() {
+            const texts = languageTexts[currentLanguage];
+            
+            // 更新界面文本
+            document.getElementById('game-title').textContent = texts.gameTitle;
+            document.getElementById('time-label').textContent = texts.timeLabel;
+            document.getElementById('flips-label').textContent = texts.flipsLabel;
+            document.getElementById('matches-label').textContent = texts.matchesLabel;
+            document.getElementById('reset-button').textContent = texts.resetButton;
+            document.getElementById('victory-text').textContent = texts.victoryText;
+            document.getElementById('final-time-text').textContent = texts.finalTimeText;
+            document.getElementById('final-flips-text').textContent = texts.finalFlipsText;
+            document.getElementById('accuracy-text').textContent = texts.accuracyText;
+            playerNameInput.placeholder = texts.namePlaceholder;
+            document.getElementById('save-score-button').textContent = texts.saveScoreButton;
+            document.getElementById('leaderboard-title').textContent = texts.leaderboardTitle;
+            loadingText.textContent = texts.loadingText;
+            document.getElementById('level-easy').textContent = texts.levelEasy;
+            document.getElementById('level-medium').textContent = texts.levelMedium;
+            document.getElementById('level-hard').textContent = texts.levelHard;
+        }
+        
+        // 创建卡片
+        function createCards() {
+            cards = [];
+            // 根据当前级别选择景点
+            const selectedLandmarks = allLandmarks.slice(0, currentLevel);
+           
+            selectedLandmarks.forEach(landmark => {
+                // 图片牌
+                cards.push({
+                    type: 'image',
+                    content: landmark.image,
+                    match: currentLanguage === 'zh' ? landmark.name : landmark.nameEn,
+                    description: currentLanguage === 'zh' ? landmark.description : landmark.descriptionEn
+                });
+                // 名字牌
+                cards.push({
+                    type: 'name',
+                    content: currentLanguage === 'zh' ? landmark.name : landmark.nameEn,
+                    match: currentLanguage === 'zh' ? landmark.name : landmark.nameEn,
+                    description: currentLanguage === 'zh' ? landmark.description : landmark.descriptionEn
+                });
+            });
+            shuffleCards();
+        }
+        
+        // 洗牌
+        function shuffleCards() {
+            // Fisher-Yates 洗牌算法
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+        }
+        
+        // 预加载图片
+        function preloadImages(callback) {
+            const selectedLandmarks = allLandmarks.slice(0, currentLevel);
+            totalImages = selectedLandmarks.length;
+            imagesLoaded = 0;
+            
+            if (totalImages === 0) {
+                callback();
+                return;
+            }
+            
+            selectedLandmarks.forEach(landmark => {
+                const img = new Image();
+                img.onload = img.onerror = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === totalImages) {
+                        callback();
+                    }
+                };
+                img.src = landmark.image;
+            });
+        }
+        
+        // 渲染游戏板
+        function renderBoard() {
+            gameBoard.innerHTML = '';
+            const columns = currentLevel <= 8 ? 4 : 5;
+            gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+           
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.index = index;
+                const front = document.createElement('div');
+                front.classList.add('card-front');
+               
+                if (card.type === 'image') {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.style.width = '100%';
+                    imgContainer.style.height = '70%';
+                    imgContainer.style.display = 'flex';
+                    imgContainer.style.alignItems = 'center';
+                    imgContainer.style.justifyContent = 'center';
+                   
+                    const img = document.createElement('img');
+                    img.src = card.content;
+                    img.alt = card.match;
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '5px';
+                   
+                    // 添加图片加载动画
+                    img.onload = function() {
+                        img.style.opacity = 1;
+                    };
+                    img.style.opacity = 0;
+                    img.style.transition = 'opacity 0.3s';
+                   
+                    // 图片加载失败处理
+                    img.onerror = function() {
+                        const span = document.createElement('span');
+                        span.textContent = card.match;
+                        span.className = 'card-title';
+                        imgContainer.innerHTML = '';
+                        imgContainer.appendChild(span);
+                    };
+                   
+                    imgContainer.appendChild(img);
+                    front.appendChild(imgContainer);
+                } else {
+                    const title = document.createElement('div');
+                    title.textContent = card.content;
+                    title.className = 'card-title';
+                    front.appendChild(title);
+                }
+               
+                // 添加描述
+                const description = document.createElement('div');
+                description.textContent = card.description;
+                description.className = 'card-description';
+                front.appendChild(description);
+                const back = document.createElement('div');
+                back.classList.add('card-back');
+                cardElement.appendChild(front);
+                cardElement.appendChild(back);
+                cardElement.addEventListener('click', flipCard);
+                gameBoard.appendChild(cardElement);
+            });
+        }
+        
+        // 翻转卡片
+        function flipCard(event) {
+            if (lockBoard) return;
+            const cardElement = event.currentTarget;
+            if (cardElement.classList.contains('flipped') || cardElement.classList.contains('matched')) return;
+            
+            cardElement.classList.add('flipped');
+            flips++;
+            flipsElement.textContent = flips;
+            const index = cardElement.dataset.index;
+            if (!firstCard) {
+                firstCard = { element: cardElement, card: cards[index] };
+            } else {
+                secondCard = { element: cardElement, card: cards[index] };
+                lockBoard = true;
+                checkMatch();
+            }
+        }
+        
+        // 检查匹配
+        function checkMatch() {
+            if (firstCard.card.match === secondCard.card.match && firstCard.card.type !== secondCard.card.type) {
+                // 匹配成功
+                setTimeout(() => {
+                    firstCard.element.classList.add('matched');
+                    secondCard.element.classList.add('matched');
+                    firstCard.element.classList.add('match-animation');
+                    secondCard.element.classList.add('match-animation');
+                   
+                    matches++;
+                    matchesElement.textContent = matches;
+                    updateProgress();
+                   
+                    resetSelection();
+                    checkVictory();
+                   
+                    // 移除动画类
+                    setTimeout(() => {
+                        firstCard.element.classList.remove('match-animation');
+                        secondCard.element.classList.remove('match-animation');
+                    }, 500);
+                }, 500);
+            } else {
+                // 不匹配
+                setTimeout(() => {
+                    firstCard.element.classList.remove('flipped');
+                    secondCard.element.classList.remove('flipped');
+                    resetSelection();
+                }, 1000);
+            }
+        }
+        
+        // 更新进度条
+        function updateProgress() {
+            const progress = (matches / totalPairs) * 100;
+            progressElement.style.width = `${progress}%`;
+        }
+        
+        // 重置选择
+        function resetSelection() {
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+        }
+        
+        // 检查胜利
+        function checkVictory() {
+            if (matches === totalPairs) {
+                clearInterval(timerInterval);
+                finalTimeElement.textContent = time;
+                finalFlipsElement.textContent = flips;
+               
+                // 计算准确率
+                const accuracy = Math.round((totalPairs / flips) * 100);
+                accuracyElement.textContent = accuracy;
+               
+                victoryMessage.style.display = 'block';
+                playerNameInput.focus();
+                
+                // 添加烟花效果
+                createConfetti();
+            }
+        }
+        
+        // 开始计时器
+        function startTimer() {
+            time = 0;
+            timerElement.textContent = time;
+            timerInterval = setInterval(() => {
+                time++;
+                timerElement.textContent = time;
+            }, 1000);
+        }
+        
+        // 重置游戏
+        function resetGame() {
+            clearInterval(timerInterval);
+            victoryMessage.style.display = 'none';
+            flips = 0;
+            matches = 0;
+            flipsElement.textContent = flips;
+            matchesElement.textContent = matches;
+            progressElement.style.width = '0%';
+            
+            // 显示加载画面
+            loadingScreen.style.display = 'flex';
+            
+            // 预加载图片
+            preloadImages(() => {
+                createCards();
+                renderBoard();
+                startTimer();
+                
+                // 隐藏加载画面
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            });
+        }
+        
+        // 保存成绩
+        function saveScore() {
+            const playerName = playerNameInput.value.trim() || (currentLanguage === 'zh' ? '匿名玩家' : 'Anonymous');
+            if (!playerName) return;
+            
+            // 计算准确率
+            const accuracy = Math.round((totalPairs / flips) * 100);
+            
+            // 获取当前难度等级
+            let level;
+            if (currentLevel === 8) level = 'easy';
+            else if (currentLevel === 12) level = 'medium';
+            else level = 'hard';
+            
+            // 创建成绩对象
+            const score = {
+                name: playerName,
+                time: time,
+                flips: flips,
+                accuracy: accuracy,
+                date: new Date().toISOString()
+            };
+            
+            // 获取现有成绩
+            const storageKey = `memoryGameScores_${level}`;
+            const existingScores = JSON.parse(localStorage.getItem(storageKey)) || [];
+            
+            // 添加新成绩
+            existingScores.push(score);
+            
+            // 按时间排序（时间越少越好）
+            existingScores.sort((a, b) => a.time - b.time);
+            
+            // 只保留前10名
+            const topScores = existingScores.slice(0, 10);
+            
+            // 保存回localStorage
+            localStorage.setItem(storageKey, JSON.stringify(topScores));
+            
+            // 更新排行榜显示
+            updateLeaderboard(level);
+            
+            // 显示成功消息
+            alert(currentLanguage === 'zh' ? '成績已保存！' : 'Score saved!');
+            
+            // 重置游戏
+            resetGame();
+        }
+        
+        // 更新排行榜
+        function updateLeaderboard(level) {
+            const storageKey = `memoryGameScores_${level}`;
+            const scores = JSON.parse(localStorage.getItem(storageKey)) || [];
+            
+            // 清空现有内容
+            leaderboardBody.innerHTML = '';
+            
+            if (scores.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 5;
+                cell.textContent = currentLanguage === 'zh' ? '暫無記錄' : 'No records yet';
+                cell.style.textAlign = 'center';
+                cell.style.padding = '20px';
+                row.appendChild(cell);
+                leaderboardBody.appendChild(row);
+                return;
+            }
+            
+            // 添加成绩行
+            scores.forEach((score, index) => {
+                const row = document.createElement('tr');
+                
+                const rankCell = document.createElement('td');
+                rankCell.className = 'rank';
+                rankCell.textContent = index + 1;
+                row.appendChild(rankCell);
+                
+                const nameCell = document.createElement('td');
+                nameCell.className = 'player-name';
+                nameCell.textContent = score.name;
+                row.appendChild(nameCell);
+                
+                const timeCell = document.createElement('td');
+                timeCell.className = 'score-time';
+                timeCell.textContent = score.time;
+                row.appendChild(timeCell);
+                
+                const flipsCell = document.createElement('td');
+                flipsCell.className = 'score-flips';
+                flipsCell.textContent = score.flips;
+                row.appendChild(flipsCell);
+                
+                const accuracyCell = document.createElement('td');
+                accuracyCell.className = 'score-accuracy';
+                accuracyCell.textContent = `${score.accuracy}%`;
+                row.appendChild(accuracyCell);
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+        
+        // 创建庆祝彩花效果
+        function createConfetti() {
+            const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f', '#9b59b6'];
+            const confettiCount = 150;
+           
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'fixed';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-20px';
+                confetti.style.opacity = '0.8';
+                confetti.style.zIndex = '9999';
+                document.body.appendChild(confetti);
+               
+                // 动画
+                const animation = confetti.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(${window.innerHeight + 100}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+                ], {
+                    duration: 2000 + Math.random() * 3000,
+                    easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+                });
+               
+                animation.onfinish = () => {
+                    document.body.removeChild(confetti);
+                };
+            }
+        }
+        
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>
